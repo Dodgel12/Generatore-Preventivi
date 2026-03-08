@@ -1,0 +1,34 @@
+LAN (Browser Client)
+       │
+       ▼
+┌─────────────────────────────────────────────────────┐
+│              SERVER LOCALE (Node.js / Express)      │
+│                                                     │
+│  ┌──────────────┐   ┌───────────────────────────┐   │
+│  │  Auth Layer  │   │      REST API Routes      │   │
+│  │  (sessions + │   │  /api/quotes  (CRUD)      │   │
+│  │  bcrypt)     │   │  /api/pdf     (genera)    │   │
+│  └──────────────┘   │  /api/print   (stampa)    │   │
+│                     │  /api/ai      (suggerimenti)│ │
+│                     │  /api/backup  (backup NAS) │  │
+│                     └───────────────────────────┘   │
+│                                                     │
+│  ┌──────────────┐   ┌───────────────────────────┐   │
+│  │  SQLite DB   │   │  Puppeteer (PDF Engine)   │   │
+│  │  quotes.db   │   │  → salva .pdf in /pdfs/   │   │
+│  └──────────────┘   └───────────────────────────┘   │
+│                                                     │
+│  ┌──────────────┐   ┌───────────────────────────┐   │
+│  │ node-printer │   │  AI Client (opzionale)    │   │
+│  │ o CUPS shell │   │  OpenAI / Anthropic       │   │
+│  └──────────────┘   └───────────────────────────┘   │
+│                                                     │
+│  ┌──────────────────────────────────────────────┐   │
+│  │  Static Frontend (/public)                   │   │
+│  │  HTML + CSS + JS (Vanilla)                   │   │
+│  └──────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+         │                         │
+         ▼                         ▼
+  Stampante USB/Rete          NAS / Disco Locale
+  (via CUPS o WinPrint)       (backup .pdf + .db)

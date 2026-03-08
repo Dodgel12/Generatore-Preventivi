@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preventivo {{quote_number}}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10pt; color: #1a1a2e; background: #fff; }
+  .page { width: 100%; max-width: 794px; margin: 0 auto; }
+
+  /* Header */
+  .header { display: flex; justify-content: space-between; align-items: flex-start; padding: 0 0 24px 0; border-bottom: 3px solid #6C63FF; margin-bottom: 28px; }
+  .company-name { font-size: 22pt; font-weight: 800; color: #6C63FF; letter-spacing: -0.5px; }
+  .company-details { font-size: 8pt; color: #666; line-height: 1.6; margin-top: 4px; }
+  .quote-title-block { text-align: right; }
+  .quote-label { font-size: 8pt; color: #999; text-transform: uppercase; letter-spacing: 1px; }
+  .quote-number { font-size: 18pt; font-weight: 700; color: #1a1a2e; }
+  .quote-date { font-size: 8pt; color: #666; margin-top: 4px; }
+
+  /* Badges */
+  .badges { display: flex; gap: 12px; margin-bottom: 24px; }
+  .badge { padding: 4px 12px; border-radius: 20px; font-size: 8pt; font-weight: 600; }
+  .badge-status { background: #EDE9FF; color: #6C63FF; }
+  .badge-validity { background: #E8F8F0; color: #22A966; }
+
+  /* Addresses */
+  .addresses { display: flex; gap: 40px; margin-bottom: 28px; }
+  .address-block { flex: 1; }
+  .address-label { font-size: 7.5pt; text-transform: uppercase; letter-spacing: 1px; color: #999; font-weight: 600; margin-bottom: 6px; }
+  .address-name { font-size: 11pt; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
+  .address-detail { font-size: 9pt; color: #555; line-height: 1.6; }
+
+  /* Items Table */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  thead th { background: #6C63FF; color: #fff; padding: 9px 12px; text-align: left; font-size: 8.5pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  thead th:last-child, thead th:nth-last-child(2), thead th:nth-last-child(3) { text-align: right; }
+  tbody tr:nth-child(even) { background: #F8F7FF; }
+  tbody td { padding: 8px 12px; font-size: 9pt; border-bottom: 1px solid #EEE; vertical-align: top; }
+  tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody td.desc small { display: block; color: #888; font-size: 8pt; margin-top: 2px; }
+
+  /* Totals */
+  .totals { display: flex; justify-content: flex-end; margin-bottom: 28px; }
+  .totals-table { width: 240px; }
+  .totals-table tr td { padding: 5px 12px; font-size: 9.5pt; }
+  .totals-table tr td:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+  .totals-table .separator td { border-top: 1px solid #DDD; }
+  .totals-table .total-row td { font-weight: 800; font-size: 12pt; color: #6C63FF; padding-top: 8px; }
+  .totals-table .discount-row td { color: #E64C4C; }
+
+  /* Notes */
+  .notes-section { background: #F8F7FF; border-left: 4px solid #6C63FF; padding: 12px 16px; border-radius: 0 6px 6px 0; margin-bottom: 24px; }
+  .notes-label { font-size: 8pt; text-transform: uppercase; letter-spacing: 1px; color: #6C63FF; font-weight: 600; margin-bottom: 4px; }
+  .notes-text { font-size: 9pt; color: #444; line-height: 1.6; }
+
+  /* Footer */
+  .footer { border-top: 2px solid #EEE; padding-top: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .footer-left { font-size: 7.5pt; color: #999; line-height: 1.8; }
+  .signature-area { text-align: center; }
+  .signature-line { border-top: 1px solid #AAA; width: 160px; margin-top: 40px; }
+  .signature-label { font-size: 7pt; color: #999; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="company-name">{{company.name}}</div>
+      <div class="company-details">
+        {{#if company.address}}📍 {{company.address}}<br>{{/if}}
+        {{#if company.phone}}📞 {{company.phone}} &nbsp;{{/if}}
+        {{#if company.email}}✉️ {{company.email}}<br>{{/if}}
+        {{#if company.vat}}P.IVA: {{company.vat}}{{/if}}
+      </div>
+    </div>
+    <div class="quote-title-block">
+      <div class="quote-label">Preventivo</div>
+      <div class="quote-number">{{quote_number}}</div>
+      <div class="quote-date">Data: {{formatDate created_at}}</div>
+    </div>
+  </div>
+
+  <!-- Badges -->
+  <div class="badges">
+    <span class="badge badge-status">{{status}}</span>
+    <span class="badge badge-validity">Valido {{validity_days}} giorni</span>
+  </div>
+
+  <!-- Addresses -->
+  <div class="addresses">
+    <div class="address-block">
+      <div class="address-label">Destinatario</div>
+      <div class="address-name">{{client_name}}</div>
+      <div class="address-detail">
+        {{#if client_address}}{{client_address}}<br>{{/if}}
+        {{#if client_phone}}Tel: {{client_phone}}<br>{{/if}}
+        {{#if client_email}}{{client_email}}<br>{{/if}}
+        {{#if client_vat}}P.IVA: {{client_vat}}{{/if}}
+      </div>
+    </div>
+    {{#if title}}
+    <div class="address-block">
+      <div class="address-label">Oggetto</div>
+      <div class="address-name" style="font-size:10pt">{{title}}</div>
+    </div>
+    {{/if}}
+  </div>
+
+  <!-- Items Table -->
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40%">Descrizione</th>
+        <th style="width:10%">Qtà</th>
+        <th style="width:15%">Prezzo Unit.</th>
+        <th style="width:10%">Sconto%</th>
+        <th style="width:15%">Totale</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each items}}
+      <tr>
+        <td class="desc">
+          {{this.description}}
+          {{#if this.notes}}<small>{{this.notes}}</small>{{/if}}
+        </td>
+        <td class="num">{{this.quantity}}</td>
+        <td class="num">€ {{formatCurrency this.unit_price}}</td>
+        <td class="num">{{#if this.discount}}{{this.discount}}%{{else}}—{{/if}}</td>
+        <td class="num">€ {{formatCurrency this.line_total}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+  <!-- Totals -->
+  <div class="totals">
+    <table class="totals-table">
+      <tr>
+        <td style="color:#666">Imponibile</td>
+        <td>€ {{formatCurrency subtotal}}</td>
+      </tr>
+      {{#if discount}}
+      <tr class="discount-row">
+        <td>Sconto</td>
+        <td>− € {{formatCurrency discount}}</td>
+      </tr>
+      {{/if}}
+      <tr>
+        <td style="color:#666">IVA {{tax_rate}}%</td>
+        <td>€ {{formatCurrency tax_amount}}</td>
+      </tr>
+      <tr class="separator"></tr>
+      <tr class="total-row">
+        <td>TOTALE</td>
+        <td>€ {{formatCurrency total}}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Notes -->
+  {{#if notes}}
+  <div class="notes-section">
+    <div class="notes-label">Note</div>
+    <div class="notes-text">{{notes}}</div>
+  </div>
+  {{/if}}
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-left">
+      Il presente preventivo è valido per {{validity_days}} giorni dalla data di emissione.<br>
+      Per accettazione, firmare e restituire copia del documento.
+    </div>
+    <div class="signature-area">
+      <div class="signature-line"></div>
+      <div class="signature-label">Firma Cliente per Accettazione</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
