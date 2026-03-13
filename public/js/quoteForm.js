@@ -4,6 +4,7 @@
 const QuoteForm = {
   items: [],
   editingId: null,
+  quoteNumber: null,
   aiEnabled: false,
 
   init() {
@@ -20,6 +21,7 @@ const QuoteForm = {
 
   reset(quote = null) {
     this.editingId = quote?.id || null;
+    this.quoteNumber = quote?.quote_number || null;
     this.items = quote?.items ? JSON.parse(JSON.stringify(quote.items)) : [];
 
     const f = document.getElementById('quote-form');

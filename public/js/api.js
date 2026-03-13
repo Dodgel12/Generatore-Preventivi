@@ -16,6 +16,7 @@ const API = {
   get: (url) => API._fetch(url),
   post: (url, body) => API._fetch(url, { method: 'POST', body: JSON.stringify(body) }),
   put: (url, body) => API._fetch(url, { method: 'PUT', body: JSON.stringify(body) }),
+  patch: (url, body) => API._fetch(url, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: (url) => API._fetch(url, { method: 'DELETE' }),
 
   // Auth
@@ -33,6 +34,7 @@ const API = {
   getStats: () => API.get('/api/quotes/stats'),
   createQuote: (data) => API.post('/api/quotes', data),
   updateQuote: (id, data) => API.put(`/api/quotes/${id}`, data),
+  updateQuoteStatus: (id, status) => API.patch(`/api/quotes/${id}/status`, { status }),
   deleteQuote: (id) => API.delete(`/api/quotes/${id}`),
 
   // PDF

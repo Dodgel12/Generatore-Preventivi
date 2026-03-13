@@ -280,6 +280,28 @@ table.data-table tbody tr:last-child td { border-bottom: none; }
 .badge-accepted { background: rgba(34,169,102,0.15); color: #4AE49A; }
 .badge-rejected { background: rgba(230,76,76,0.15); color: #FF7B7B; }
 
+.badge-select {
+  border: none;
+  padding: 3px 24px 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: all var(--transition);
+  outline: none;
+}
+.badge-select.badge-draft { background-color: rgba(136,139,170,0.15); color: var(--text-muted); stroke: var(--text-muted); }
+.badge-select.badge-sent { background-color: rgba(108,99,255,0.15); color: var(--purple); stroke: var(--purple); }
+.badge-select.badge-accepted { background-color: rgba(34,169,102,0.15); color: #4AE49A; stroke: #4AE49A; }
+.badge-select.badge-rejected { background-color: rgba(230,76,76,0.15); color: #FF7B7B; stroke: #FF7B7B; }
+
+.badge-select:hover { filter: brightness(1.2); }
+.badge-select:focus { box-shadow: 0 0 0 2px rgba(108,99,255,0.3); }
+
 /* ===== FORMS ===== */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-group { margin-bottom: 0; }

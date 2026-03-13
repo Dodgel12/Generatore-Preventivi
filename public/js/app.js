@@ -41,6 +41,10 @@ const App = {
     document.getElementById('btn-new-quote').addEventListener('click', () => {
       this.navigate('new-quote');
     });
+    document.querySelector('[data-nav="new-quote"]').addEventListener('click', () => {
+      QuoteForm.reset();
+      this.navigate('new-quote');
+    });
     document.getElementById('btn-cancel-form').addEventListener('click', () => {
       this.navigate('dashboard');
     });
@@ -64,7 +68,7 @@ const App = {
 
     if (view === 'dashboard') this.loadDashboard();
     if (view === 'quotes') this.loadQuotesList();
-    if (view === 'new-quote') { QuoteForm.reset(); document.getElementById('form-view-title').textContent = 'Nuovo Preventivo'; }
+    if (view === 'new-quote') { document.getElementById('form-view-title').textContent = QuoteForm.editingId ? `Modifica ${QuoteForm.quoteNumber || ''}` : 'Nuovo Preventivo'; }
     if (view === 'settings') this.loadSettings();
   },
 
@@ -108,7 +112,14 @@ const App = {
         <td><span style="font-weight:700;color:var(--purple)">${q.quote_number}</span></td>
         <td>${q.client_name}</td>
         ${!compact ? `<td>${q.title || '<span style="color:var(--text-dim)">—</span>'}</td>` : ''}
-        <td><span class="badge badge-${q.status}">${this.statusLabel(q.status)}</span></td>
+        <td onclick="event.stopPropagation()">
+          <select class="badge-select badge-${q.status}" onchange="App.updateQuoteStatus(${q.id}, this.value)">
+            <option value="draft" ${q.status === 'draft' ? 'selected' : ''}>Bozza</option>
+            <option value="sent" ${q.status === 'sent' ? 'selected' : ''}>Inviato</option>
+            <option value="accepted" ${q.status === 'accepted' ? 'selected' : ''}>Accettato</option>
+            <option value="rejected" ${q.status === 'rejected' ? 'selected' : ''}>Rifiutato</option>
+          </select>
+        </td>
         <td style="font-weight:700">€ ${parseFloat(q.total || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
         <td style="color:var(--text-muted);font-size:12px">${new Date(q.created_at).toLocaleDateString('it-IT')}</td>
         <td onclick="event.stopPropagation()">
@@ -124,6 +135,16 @@ const App = {
 
   statusLabel(s) {
     return { draft: 'Bozza', sent: 'Inviato', accepted: 'Accettato', rejected: 'Rifiutato' }[s] || s;
+  },
+
+  async updateQuoteStatus(id, status) {
+    try {
+      await API.updateQuoteStatus(id, status);
+      Toast.show('Stato aggiornato!', 'success');
+      // Refresh current view to update stats and badge colors
+      if (this.currentView === 'dashboard') this.loadDashboard();
+      else if (this.currentView === 'quotes') this.loadQuotesList();
+    } catch (e) { Toast.show(e.message, 'error'); this.loadQuotesList(); }
   },
 
   async openQuoteDetail(id) {

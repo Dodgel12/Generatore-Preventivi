@@ -94,6 +94,18 @@ router.put('/:id', requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// Aggiorna stato preventivo
+router.patch('/:id/status', requireAuth, (req, res) => {
+  const { status } = req.body;
+  const existing = db.prepare('SELECT id FROM quotes WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Preventivo non trovato' });
+
+  db.prepare('UPDATE quotes SET status=?, updated_at=CURRENT_TIMESTAMP WHERE id=?')
+    .run(status || 'draft', req.params.id);
+
+  res.json({ success: true });
+});
+
 // Elimina preventivo
 router.delete('/:id', requireAuth, (req, res) => {
   const existing = db.prepare('SELECT id FROM quotes WHERE id = ?').get(req.params.id);
