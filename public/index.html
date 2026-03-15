@@ -130,7 +130,7 @@
               <option value="accepted">Accettato</option>
               <option value="rejected">Rifiutato</option>
             </select>
-            <button class="btn btn-primary" onclick="App.navigate('new-quote')">➕ Nuovo</button>
+            <button class="btn btn-primary" onclick="QuoteForm.reset(); App.navigate('new-quote')">➕ Nuovo</button>
           </div>
           <div class="table-wrap">
             <table class="data-table">
@@ -382,9 +382,9 @@
   </div>
 </div>
 
-<script src="/js/api.js"></script>
-<script src="/js/quoteForm.js"></script>
-<script src="/js/app.js"></script>
+<script src="/js/api.js?v=1.0.1"></script>
+<script src="/js/quoteForm.js?v=1.0.1"></script>
+<script src="/js/app.js?v=1.0.1"></script>
 <script>
 // AI Modal helpers
 function showAIModal() {
@@ -402,7 +402,7 @@ async function aiSuggestDesc() {
   const el = document.getElementById('ai-result-desc');
   el.textContent = '⏳ Generazione...'; el.style.display = 'block';
   try {
-    const r = await API.suggestDesc(p);
+     const r = await BabboAPI.suggestDesc(p);
     el.innerHTML = `<strong>Descrizione suggerita:</strong><br>${r.description}`;
   } catch (e) { el.textContent = 'Errore: ' + e.message; }
 }
@@ -412,7 +412,7 @@ async function aiSuggestPrice() {
   const el = document.getElementById('ai-result-price');
   el.textContent = '⏳ Ricerca prezzi...'; el.style.display = 'block';
   try {
-    const r = await API.suggestPrice(p);
+     const r = await BabboAPI.suggestPrice(p);
     el.innerHTML = `<strong>Range prezzo mercato:</strong><br>Min: €${r.min} — Max: €${r.max}<br><small>${r.note}</small>`;
   } catch (e) { el.textContent = 'Errore: ' + e.message; }
 }
@@ -427,8 +427,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const id = QuoteForm.editingId;
       document.getElementById('pdf-actions').innerHTML = `
         <button type="button" class="btn btn-secondary" onclick="handleGeneratePDF(${id})">📄 Genera / Aggiorna PDF</button>
-        <a href="${API.viewPDF(id)}" target="_blank" class="btn btn-ghost">👁️ Visualizza PDF</a>
-        <a href="${API.downloadPDF(id)}" class="btn btn-ghost">⬇️ Scarica PDF</a>
+        <a href="${BabboAPI.viewPDF(id)}" target="_blank" class="btn btn-ghost">👁️ Visualizza PDF</a>
+        <a href="${BabboAPI.downloadPDF(id)}" class="btn btn-ghost">⬇️ Scarica PDF</a>
       `;
     } else {
       document.getElementById('pdf-actions').innerHTML = '<p style="font-size:12px;color:var(--text-muted)">Salva il preventivo per generare il PDF.</p>';

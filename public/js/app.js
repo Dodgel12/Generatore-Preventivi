@@ -19,7 +19,7 @@ const App = {
 
   async init() {
     try {
-      const user = await API.me();
+      const user = await BabboAPI.me();
       this.currentUser = user;
       document.getElementById('user-name-display').textContent = user.username;
       document.getElementById('user-avatar-letter').textContent = user.username[0].toUpperCase();
@@ -35,10 +35,11 @@ const App = {
       el.addEventListener('click', () => this.navigate(el.dataset.nav));
     });
     document.getElementById('btn-logout').addEventListener('click', async () => {
-      await API.logout();
+      await BabboAPI.logout();
       window.location.href = '/login.html';
     });
     document.getElementById('btn-new-quote').addEventListener('click', () => {
+      QuoteForm.reset();
       this.navigate('new-quote');
     });
     document.querySelector('[data-nav="new-quote"]').addEventListener('click', () => {
@@ -74,7 +75,7 @@ const App = {
 
   async loadDashboard() {
     try {
-      const stats = await API.getStats();
+      const stats = await BabboAPI.getStats();
       document.getElementById('stat-total').textContent = stats.total;
       document.getElementById('stat-month').textContent = stats.recentMonth;
       document.getElementById('stat-value').textContent = `€ ${(stats.totalValue || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}`;
@@ -82,7 +83,7 @@ const App = {
       document.getElementById('stat-accepted').textContent = accepted?.count || 0;
 
       // Recent quotes
-      const { quotes } = await API.getQuotes({ limit: 8 });
+      const { quotes } = await BabboAPI.getQuotes({ limit: 8 });
       this.renderQuoteRows(document.getElementById('dashboard-quotes-tbody'), quotes, true);
     } catch (e) { console.error(e); }
   },
@@ -97,7 +98,7 @@ const App = {
     const tbody = document.getElementById('quotes-tbody');
     tbody.innerHTML = '<tr><td colspan="7" class="loading-overlay"><div class="spinner"></div> Caricamento...</td></tr>';
     try {
-      const { quotes } = await API.getQuotes(params);
+      const { quotes } = await BabboAPI.getQuotes(params);
       this.renderQuoteRows(tbody, quotes, false);
     } catch (e) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--red)">Errore: ${e.message}</td></tr>`; }
   },
@@ -139,7 +140,7 @@ const App = {
 
   async updateQuoteStatus(id, status) {
     try {
-      await API.updateQuoteStatus(id, status);
+      await BabboAPI.updateQuoteStatus(id, status);
       Toast.show('Stato aggiornato!', 'success');
       // Refresh current view to update stats and badge colors
       if (this.currentView === 'dashboard') this.loadDashboard();
@@ -153,7 +154,7 @@ const App = {
 
   async editQuote(id) {
     try {
-      const quote = await API.getQuote(id);
+      const quote = await BabboAPI.getQuote(id);
       QuoteForm.reset(quote);
       this.navigate('new-quote');
     } catch (e) { Toast.show(e.message, 'error'); }
@@ -162,17 +163,17 @@ const App = {
   async generateAndViewPDF(id) {
     Toast.show('Generazione PDF in corso...', 'info');
     try {
-      await API.generatePDF(id);
+      await BabboAPI.generatePDF(id);
       Toast.show('PDF generato!', 'success');
       // Open PDF in new tab
-      window.open(API.viewPDF(id), '_blank');
+      window.open(BabboAPI.viewPDF(id), '_blank');
     } catch (e) { Toast.show('Errore PDF: ' + e.message, 'error'); }
   },
 
   async deleteQuote(id, number) {
     if (!confirm(`Eliminare il preventivo ${number}? Questa azione è irreversibile.`)) return;
     try {
-      await API.deleteQuote(id);
+      await BabboAPI.deleteQuote(id);
       Toast.show('Preventivo eliminato', 'success');
       if (this.currentView === 'dashboard') this.loadDashboard();
       else this.loadQuotesList();
@@ -195,10 +196,10 @@ window.handleGeneratePDF = async function(id) {
   const btn = document.getElementById('btn-gen-pdf');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Generazione...'; }
   try {
-    const result = await API.generatePDF(id);
+    const result = await BabboAPI.generatePDF(id);
     Toast.show('PDF generato!', 'success');
     const preview = document.getElementById('pdf-preview-frame');
-    if (preview) preview.src = API.viewPDF(id);
+    if (preview) preview.src = BabboAPI.viewPDF(id);
     if (btn) { btn.disabled = false; btn.textContent = '📄 Genera PDF'; }
   } catch (e) {
     Toast.show('Errore: ' + e.message, 'error');
@@ -221,7 +222,7 @@ window.doBackup = async function() {
   try {
     const btn = document.getElementById('btn-backup');
     btn.disabled = true; btn.textContent = 'Backup in corso...';
-    const result = await API.backup(backupPath);
+    const result = await BabboAPI.backup(backupPath);
     Toast.show(`Backup completato! ${result.files} file copiati in ${result.path}`, 'success');
     btn.disabled = false; btn.textContent = '💾 Esegui Backup';
   } catch (e) {
@@ -239,7 +240,7 @@ window.changePassword = async function() {
   if (newP !== confP) return Toast.show('Le password non coincidono', 'error');
   if (newP.length < 6) return Toast.show('La password deve essere di almeno 6 caratteri', 'error');
   try {
-    await API.changePassword(oldP, newP);
+    await BabboAPI.changePassword(oldP, newP);
     Toast.show('Password cambiata con successo!', 'success');
     ['old-password', 'new-password', 'confirm-password'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';

@@ -9,7 +9,7 @@ const QuoteForm = {
 
   init() {
     this.bindEvents();
-    API.aiStatus().then(s => { this.aiEnabled = s.configured; }).catch(() => {});
+    BabboAPI.aiStatus().then(s => { this.aiEnabled = s.configured; }).catch(() => {});
   },
 
   bindEvents() {
@@ -170,11 +170,11 @@ const QuoteForm = {
     try {
       let result;
       if (this.editingId) {
-        await API.updateQuote(this.editingId, data);
+        await BabboAPI.updateQuote(this.editingId, data);
         result = { id: this.editingId };
         Toast.show('Preventivo aggiornato!', 'success');
       } else {
-        result = await API.createQuote(data);
+        result = await BabboAPI.createQuote(data);
         Toast.show(`Preventivo ${result.quote_number} creato!`, 'success');
       }
       App.navigate('dashboard');
