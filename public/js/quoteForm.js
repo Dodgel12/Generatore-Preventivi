@@ -7,6 +7,7 @@ const QuoteForm = {
   editingId: null,
   quoteNumber: null,
   aiEnabled: false,
+  showOverallTotal: false,
 
   init() {
     this.bindEvents();
@@ -40,6 +41,10 @@ const QuoteForm = {
       this.setPricingMode(e.target.value);
     });
 
+    document.getElementById('form-show-overall-total').addEventListener('change', (e) => {
+      this.showOverallTotal = !!e.target.checked;
+    });
+
     document.getElementById('form-single-total').addEventListener('input', (e) => {
       const v = parseFloat(e.target.value);
       this.currentTab().single_total = Number.isFinite(v) ? Math.max(v, 0) : 0;
@@ -71,6 +76,7 @@ const QuoteForm = {
     this.quoteNumber = quote?.quote_number || null;
     this.tabs = this._normalizeTabsFromQuote(quote);
     this.activeTab = 0;
+    this.showOverallTotal = !!(quote?.show_overall_total);
 
     const f = document.getElementById('quote-form');
     f.querySelector('#form-client-name').value = quote?.client_name || '';
@@ -80,6 +86,9 @@ const QuoteForm = {
     f.querySelector('#form-client-vat').value = quote?.client_vat || '';
     f.querySelector('#form-title').value = quote?.title || '';
     f.querySelector('#form-status').value = quote?.status || 'draft';
+
+    const showOverallEl = f.querySelector('#form-show-overall-total');
+    if (showOverallEl) showOverallEl.checked = this.showOverallTotal;
 
     this.renderTabs();
     this.setActiveTab(0);
@@ -390,6 +399,8 @@ const QuoteForm = {
       client_vat: document.getElementById('form-client-vat').value.trim(),
       title: document.getElementById('form-title').value.trim(),
       status: document.getElementById('form-status').value,
+
+      show_overall_total: !!this.showOverallTotal,
       // New format
       tabs: this.tabs,
 

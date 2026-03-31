@@ -24,6 +24,7 @@ function ensureQuoteColumns() {
 
   const toAdd = [];
   if (!existing.has('tabs')) toAdd.push("ALTER TABLE quotes ADD COLUMN tabs TEXT NOT NULL DEFAULT '[]'");
+  if (!existing.has('show_overall_total')) toAdd.push("ALTER TABLE quotes ADD COLUMN show_overall_total INTEGER NOT NULL DEFAULT 0");
   if (!existing.has('pricing_mode')) toAdd.push("ALTER TABLE quotes ADD COLUMN pricing_mode TEXT DEFAULT 'unit'");
 
   for (const stmt of toAdd) {

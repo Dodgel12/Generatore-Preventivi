@@ -23,6 +23,7 @@ router.post('/generate/:id', requireAuth, async (req, res) => {
   if (!quote) return res.status(404).json({ error: 'Preventivo non trovato' });
 
   try {
+    quote.show_overall_total = !!quote.show_overall_total;
     quote.items = JSON.parse(quote.items || '[]');
     quote.tabs = (() => {
       try {

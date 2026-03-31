@@ -157,6 +157,7 @@ router.get('/stats', requireAuth, (req, res) => {
 router.get('/:id', requireAuth, (req, res) => {
   const q = db.prepare('SELECT * FROM quotes WHERE id = ?').get(req.params.id);
   if (!q) return res.status(404).json({ error: 'Preventivo non trovato' });
+  q.show_overall_total = !!q.show_overall_total;
   q.items = JSON.parse(q.items || '[]');
   q.tabs = (() => {
     try {
@@ -201,12 +202,13 @@ router.post('/', requireAuth, (req, res) => {
     total: tabs.reduce((s, t) => s + toNumber(t.total, 0), 0)
   };
   const first = tabs[0] || { items: [], pricing_mode: 'unit', tax_rate: 22, notes: '', validity_days: null };
+  const show_overall_total = !!req.body?.show_overall_total;
 
   const quote_number = generateQuoteNumber();
   const result = db.prepare(`
     INSERT INTO quotes (quote_number, title, client_name, client_email, client_phone, client_address, client_vat,
-      items, tabs, pricing_mode, subtotal, tax_rate, tax_amount, discount, total, notes, validity_days, status, created_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      items, tabs, show_overall_total, pricing_mode, subtotal, tax_rate, tax_amount, discount, total, notes, validity_days, status, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     quote_number,
     title || '',
@@ -217,6 +219,7 @@ router.post('/', requireAuth, (req, res) => {
     client_vat || '',
     JSON.stringify(first.items || []),
     JSON.stringify(tabs),
+    show_overall_total ? 1 : 0,
     first.pricing_mode || 'unit',
     overall.subtotal,
     first.tax_rate ?? 22,
@@ -247,10 +250,11 @@ router.put('/:id', requireAuth, (req, res) => {
     total: tabs.reduce((s, t) => s + toNumber(t.total, 0), 0)
   };
   const first = tabs[0] || { items: [], pricing_mode: 'unit', tax_rate: 22, notes: '', validity_days: null };
+  const show_overall_total = !!req.body?.show_overall_total;
 
   db.prepare(`
     UPDATE quotes SET title=?, client_name=?, client_email=?, client_phone=?, client_address=?, client_vat=?,
-      items=?, tabs=?, pricing_mode=?, subtotal=?, tax_rate=?, tax_amount=?, discount=?, total=?, notes=?, validity_days=?, status=?,
+      items=?, tabs=?, show_overall_total=?, pricing_mode=?, subtotal=?, tax_rate=?, tax_amount=?, discount=?, total=?, notes=?, validity_days=?, status=?,
       updated_at=CURRENT_TIMESTAMP
     WHERE id=?
   `).run(
@@ -262,6 +266,7 @@ router.put('/:id', requireAuth, (req, res) => {
     client_vat || '',
     JSON.stringify(first.items || []),
     JSON.stringify(tabs),
+    show_overall_total ? 1 : 0,
     first.pricing_mode || 'unit',
     overall.subtotal,
     first.tax_rate ?? 22,

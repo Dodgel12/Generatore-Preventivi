@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS quotes (
   items TEXT NOT NULL DEFAULT '[]',
   -- New format: multiple "preventivi" (tabs) stored as JSON
   tabs TEXT NOT NULL DEFAULT '[]',
+  -- When enabled, PDF shows a final overall total summing all tabs
+  show_overall_total INTEGER NOT NULL DEFAULT 0,
   -- Fallback for legacy/single-tab rendering
   pricing_mode TEXT DEFAULT 'unit',
   subtotal REAL DEFAULT 0,

@@ -17,7 +17,11 @@ Handlebars.registerHelper('eq', (a, b) => a === b);
 
 function ensureTabs(quoteData) {
   const tabs = Array.isArray(quoteData?.tabs) ? quoteData.tabs : [];
-  if (tabs.length) return quoteData;
+  if (tabs.length) {
+    const overall_total = tabs.reduce((s, t) => s + (parseFloat(t?.total || 0) || 0), 0);
+    const show_overall_total_section = !!quoteData?.show_overall_total && tabs.length > 1;
+    return { ...quoteData, overall_total, show_overall_total_section };
+  }
   const items = Array.isArray(quoteData?.items) ? quoteData.items : [];
   return {
     ...quoteData,
@@ -34,7 +38,9 @@ function ensureTabs(quoteData) {
         tax_amount: quoteData?.tax_amount ?? 0,
         total: quoteData?.total ?? 0
       }
-    ]
+    ],
+    overall_total: parseFloat(quoteData?.total || 0) || 0,
+    show_overall_total_section: false
   };
 }
 

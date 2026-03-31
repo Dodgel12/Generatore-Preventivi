@@ -22,7 +22,6 @@
   .badges { display: flex; gap: 12px; margin-bottom: 24px; }
   .badge { padding: 4px 12px; border-radius: 20px; font-size: 8pt; font-weight: 600; }
   .badge-status { background: #EDE9FF; color: #6C63FF; }
-  .badge-validity { background: #E8F8F0; color: #22A966; }
 
   /* Addresses */
   .addresses { display: flex; gap: 40px; margin-bottom: 28px; }
@@ -60,12 +59,8 @@
   .notes-label { font-size: 8pt; text-transform: uppercase; letter-spacing: 1px; color: #6C63FF; font-weight: 600; margin-bottom: 4px; }
   .notes-text { font-size: 9pt; color: #444; line-height: 1.6; }
 
-  /* Footer */
-  .footer { border-top: 2px solid #EEE; padding-top: 16px; display: flex; justify-content: space-between; align-items: flex-end; }
-  .footer-left { font-size: 7.5pt; color: #999; line-height: 1.8; }
-  .signature-area { text-align: center; }
-  .signature-line { border-top: 1px solid #AAA; width: 160px; margin-top: 40px; }
-  .signature-label { font-size: 7pt; color: #999; margin-top: 4px; }
+  /* Overall total */
+  .overall-total { margin-top: 18px; padding-top: 14px; border-top: 2px solid #EEE; }
 </style>
 </head>
 <body>
@@ -91,9 +86,6 @@
   <!-- Badges -->
   <div class="badges">
     <span class="badge badge-status">{{status}}</span>
-    {{#if validity_days}}
-      <span class="badge badge-validity">Valido {{validity_days}} giorni</span>
-    {{/if}}
   </div>
 
   <!-- Addresses -->
@@ -120,11 +112,7 @@
     <div class="tab-section">
       <div class="tab-header">
         <div class="tab-name">{{this.name}}</div>
-        <div class="tab-meta">
-          {{#if this.validity_days}}
-            <span class="badge badge-validity">Valido {{this.validity_days}} giorni</span>
-          {{/if}}
-        </div>
+        <div class="tab-meta"></div>
       </div>
 
       <!-- Items Table -->
@@ -209,6 +197,22 @@
     </div>
   {{/each}}
 
+  {{#if show_overall_total_section}}
+    <div class="overall-total">
+      <div class="tab-header" style="margin: 0 0 8px 0;">
+        <div class="tab-name">Totale complessivo</div>
+      </div>
+      <div class="totals" style="margin-bottom: 0;">
+        <table class="totals-table">
+          <tr class="total-row">
+            <td>TOTALE</td>
+            <td>€ {{formatCurrency overall_total}}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  {{/if}}
+
   <!-- Notes (global, optional) -->
   {{#if notes}}
   <div class="notes-section">
@@ -217,16 +221,6 @@
   </div>
   {{/if}}
 
-  <!-- Footer -->
-  <div class="footer">
-    <div class="footer-left">
-      Per accettazione, firmare e restituire copia del documento.
-    </div>
-    <div class="signature-area">
-      <div class="signature-line"></div>
-      <div class="signature-label">Firma Cliente per Accettazione</div>
-    </div>
-  </div>
 </div>
 </body>
 </html>
