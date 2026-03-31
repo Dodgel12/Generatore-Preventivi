@@ -17,13 +17,17 @@ CREATE TABLE IF NOT EXISTS quotes (
   client_address TEXT,
   client_vat TEXT,
   items TEXT NOT NULL DEFAULT '[]',
+  -- New format: multiple "preventivi" (tabs) stored as JSON
+  tabs TEXT NOT NULL DEFAULT '[]',
+  -- Fallback for legacy/single-tab rendering
+  pricing_mode TEXT DEFAULT 'unit',
   subtotal REAL DEFAULT 0,
   tax_rate REAL DEFAULT 22,
   tax_amount REAL DEFAULT 0,
   discount REAL DEFAULT 0,
   total REAL DEFAULT 0,
   notes TEXT,
-  validity_days INTEGER DEFAULT 30,
+  validity_days INTEGER DEFAULT NULL,
   status TEXT DEFAULT 'draft',
   pdf_path TEXT,
   created_by INTEGER REFERENCES users(id),

@@ -2,7 +2,8 @@
 // Dynamic quote form with live totals and AI assistance
 
 const QuoteForm = {
-  items: [],
+  tabs: [],
+  activeTab: 0,
   editingId: null,
   quoteNumber: null,
   aiEnabled: false,
@@ -14,15 +15,56 @@ const QuoteForm = {
 
   bindEvents() {
     document.getElementById('btn-add-item').addEventListener('click', () => this.addItem());
-    document.getElementById('form-tax-rate').addEventListener('input', () => this.recalcTotals());
-    document.getElementById('form-discount').addEventListener('input', () => this.recalcTotals());
+    document.getElementById('form-tax-rate').addEventListener('input', (e) => {
+      this.currentTab().tax_rate = parseFloat(e.target.value) || 0;
+      this.recalcTotals();
+    });
+    document.getElementById('form-discount').addEventListener('input', (e) => {
+      this.currentTab().discount = parseFloat(e.target.value) || 0;
+      this.recalcTotals();
+    });
+    document.getElementById('form-validity').addEventListener('input', (e) => {
+      const v = e.target.value;
+      if (v === '') { this.currentTab().validity_days = null; return; }
+      const n = parseInt(v);
+      this.currentTab().validity_days = (!Number.isFinite(n) || n <= 0) ? null : n;
+    });
+    document.getElementById('form-notes').addEventListener('input', (e) => {
+      this.currentTab().notes = e.target.value;
+    });
+    document.getElementById('form-tab-name').addEventListener('input', (e) => {
+      this.currentTab().name = e.target.value;
+      this.renderTabs();
+    });
+    document.getElementById('form-pricing-mode').addEventListener('change', (e) => {
+      this.setPricingMode(e.target.value);
+    });
+
+    const tabBar = document.getElementById('quote-tabs');
+    tabBar.addEventListener('click', (e) => {
+      const pill = e.target.closest('.tab-pill');
+      if (pill && pill.dataset.tab != null) {
+        this.setActiveTab(parseInt(pill.dataset.tab));
+        return;
+      }
+      if (e.target.id === 'btn-add-tab') {
+        this.addTab();
+        return;
+      }
+      if (e.target.id === 'btn-remove-tab') {
+        this.removeActiveTab();
+        return;
+      }
+    });
+
     document.getElementById('quote-form').addEventListener('submit', (e) => { e.preventDefault(); this.save(); });
   },
 
   reset(quote = null) {
     this.editingId = quote?.id || null;
     this.quoteNumber = quote?.quote_number || null;
-    this.items = quote?.items ? JSON.parse(JSON.stringify(quote.items)) : [];
+    this.tabs = this._normalizeTabsFromQuote(quote);
+    this.activeTab = 0;
 
     const f = document.getElementById('quote-form');
     f.querySelector('#form-client-name').value = quote?.client_name || '';
@@ -31,26 +73,111 @@ const QuoteForm = {
     f.querySelector('#form-client-address').value = quote?.client_address || '';
     f.querySelector('#form-client-vat').value = quote?.client_vat || '';
     f.querySelector('#form-title').value = quote?.title || '';
-    f.querySelector('#form-notes').value = quote?.notes || '';
-    f.querySelector('#form-tax-rate').value = quote?.tax_rate ?? 22;
-    f.querySelector('#form-discount').value = quote?.discount || 0;
-    f.querySelector('#form-validity').value = quote?.validity_days || 30;
     f.querySelector('#form-status').value = quote?.status || 'draft';
 
-    if (!this.items.length) this.items.push(this.newItem());
-    this.renderItems();
-    this.recalcTotals();
+    this.renderTabs();
+    this.setActiveTab(0);
 
     const title = document.getElementById('form-view-title');
     title.textContent = quote ? `Modifica ${quote.quote_number}` : 'Nuovo Preventivo';
   },
 
-  newItem() {
+  currentTab() {
+    if (!this.tabs.length) this.tabs = [this.newTab()];
+    return this.tabs[this.activeTab] || this.tabs[0];
+  },
+
+  newTab() {
+    return {
+      name: `Preventivo ${this.tabs.length + 1}`,
+      pricing_mode: 'unit',
+      items: [this.newItem('unit')],
+      tax_rate: 22,
+      discount: 0,
+      validity_days: null,
+      notes: ''
+    };
+  },
+
+  newItem(mode = 'unit') {
+    if (mode === 'total') return { description: '', quantity: 1, unit_price: 0, discount: 0, line_total: 0 };
     return { description: '', quantity: 1, unit_price: 0, discount: 0, line_total: 0 };
   },
 
+  addTab() {
+    this.tabs.push(this.newTab());
+    this.setActiveTab(this.tabs.length - 1);
+  },
+
+  removeActiveTab() {
+    if (this.tabs.length <= 1) return;
+    this.tabs.splice(this.activeTab, 1);
+    this.setActiveTab(Math.max(0, this.activeTab - 1));
+  },
+
+  setActiveTab(idx) {
+    this.activeTab = Math.max(0, Math.min(idx, this.tabs.length - 1));
+    const tab = this.currentTab();
+
+    document.getElementById('form-tab-name').value = tab.name || '';
+    document.getElementById('form-pricing-mode').value = tab.pricing_mode || 'unit';
+    document.getElementById('form-tax-rate').value = tab.tax_rate ?? 22;
+    document.getElementById('form-discount').value = tab.discount ?? 0;
+    document.getElementById('form-validity').value = tab.validity_days == null ? '' : tab.validity_days;
+    document.getElementById('form-notes').value = tab.notes || '';
+
+    this.applyPricingModeUI();
+    this.renderTabs();
+    this.renderItemsHeader();
+    this.renderItems();
+    this.recalcTotals();
+  },
+
+  setPricingMode(mode) {
+    const tab = this.currentTab();
+    const next = mode === 'total' ? 'total' : 'unit';
+    const prev = (tab.pricing_mode || 'unit');
+    if (prev === next) return;
+
+    // Convert items in-place
+    if (next === 'total') {
+      tab.items.forEach((it, i) => {
+        // Ensure line_total is up-to-date before switching
+        const oldMode = tab.pricing_mode;
+        tab.pricing_mode = prev;
+        this.calcLineTotal(i, tab);
+        tab.pricing_mode = oldMode;
+        it.quantity = it.quantity || 1;
+        it.unit_price = 0;
+        it.discount = 0;
+        it.line_total = parseFloat(it.line_total) || 0;
+      });
+    } else {
+      tab.items.forEach((it) => {
+        it.quantity = it.quantity || 1;
+        it.unit_price = it.unit_price || 0;
+        it.discount = it.discount || 0;
+      });
+    }
+
+    tab.pricing_mode = next;
+
+    this.applyPricingModeUI();
+    this.renderItemsHeader();
+    this.renderItems();
+    this.recalcTotals();
+  },
+
+  applyPricingModeUI() {
+    const wrap = document.querySelector('.items-table-wrap');
+    const tab = this.currentTab();
+    const isTotal = (tab.pricing_mode || 'unit') === 'total';
+    if (wrap) wrap.classList.toggle('pricing-total', isTotal);
+  },
+
   addItem() {
-    this.items.push(this.newItem());
+    const tab = this.currentTab();
+    tab.items.push(this.newItem(tab.pricing_mode || 'unit'));
     this.renderItems();
     // Focus on the description of the new row
     const rows = document.querySelectorAll('.item-row');
@@ -59,27 +186,78 @@ const QuoteForm = {
   },
 
   removeItem(idx) {
-    this.items.splice(idx, 1);
-    if (!this.items.length) this.items.push(this.newItem());
+    const tab = this.currentTab();
+    tab.items.splice(idx, 1);
+    if (!tab.items.length) tab.items.push(this.newItem(tab.pricing_mode || 'unit'));
     this.renderItems();
     this.recalcTotals();
+  },
+
+  renderTabs() {
+    const bar = document.getElementById('quote-tabs');
+    if (!bar) return;
+    const pills = this.tabs.map((t, i) => {
+      const name = (t?.name || `Preventivo ${i + 1}`);
+      return `<button type="button" class="tab-pill ${i === this.activeTab ? 'active' : ''}" data-tab="${i}">${this._esc(name)}</button>`;
+    }).join('');
+
+    const actions = `
+      <div class="tab-actions">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-add-tab">+ Tab</button>
+        ${this.tabs.length > 1 ? '<button type="button" class="btn btn-ghost btn-sm" id="btn-remove-tab">Rimuovi Tab</button>' : ''}
+      </div>
+    `;
+    bar.innerHTML = pills + actions;
+  },
+
+  renderItemsHeader() {
+    const h = document.getElementById('items-table-header');
+    if (!h) return;
+    const mode = this.currentTab().pricing_mode || 'unit';
+    if (mode === 'total') {
+      h.innerHTML = `
+        <span>Descrizione</span>
+        <span style="text-align:right">Totale</span>
+        <span></span>
+      `;
+      return;
+    }
+    h.innerHTML = `
+      <span>Descrizione</span>
+      <span>Qtà</span>
+      <span>Prezzo Unit.</span>
+      <span>Sc. %</span>
+      <span style="text-align:right">Totale</span>
+      <span></span>
+    `;
   },
 
   renderItems() {
     const container = document.getElementById('items-rows');
     container.innerHTML = '';
-    this.items.forEach((item, i) => {
+    const tab = this.currentTab();
+    const mode = tab.pricing_mode || 'unit';
+
+    tab.items.forEach((item, i) => {
       const row = document.createElement('div');
       row.className = 'item-row';
-      row.innerHTML = `
-        <input type="text" placeholder="Descrizione prodotto/servizio" value="${this._esc(item.description)}" data-field="description" data-idx="${i}">
-        <input type="number" placeholder="1" min="0.01" step="0.01" value="${item.quantity}" data-field="quantity" data-idx="${i}">
-        <input type="number" placeholder="0.00" min="0" step="0.01" value="${item.unit_price}" data-field="unit_price" data-idx="${i}">
-        <input type="number" placeholder="0" min="0" max="100" step="0.1" value="${item.discount || ''}" data-field="discount" data-idx="${i}">
-        <div class="line-total">€ ${this._fmt(item.line_total)}</div>
-        <button type="button" class="btn-remove-item" data-idx="${i}" title="Rimuovi riga">×</button>
-        ${this.aiEnabled ? `<div class="ai-item-actions" data-idx="${i}"></div>` : ''}
-      `;
+      if (mode === 'total') {
+        row.innerHTML = `
+          <input type="text" placeholder="Descrizione prodotto/servizio" value="${this._esc(item.description)}" data-field="description" data-idx="${i}">
+          <input type="number" placeholder="0.00" min="0" step="0.01" value="${item.line_total ?? 0}" data-field="line_total" data-idx="${i}" style="text-align:right">
+          <button type="button" class="btn-remove-item" data-idx="${i}" title="Rimuovi riga">×</button>
+        `;
+      } else {
+        row.innerHTML = `
+          <input type="text" placeholder="Descrizione prodotto/servizio" value="${this._esc(item.description)}" data-field="description" data-idx="${i}">
+          <input type="number" placeholder="1" min="0.01" step="0.01" value="${item.quantity}" data-field="quantity" data-idx="${i}">
+          <input type="number" placeholder="0.00" min="0" step="0.01" value="${item.unit_price}" data-field="unit_price" data-idx="${i}">
+          <input type="number" placeholder="0" min="0" max="100" step="0.1" value="${item.discount || ''}" data-field="discount" data-idx="${i}">
+          <div class="line-total">€ ${this._fmt(item.line_total)}</div>
+          <button type="button" class="btn-remove-item" data-idx="${i}" title="Rimuovi riga">×</button>
+          ${this.aiEnabled ? `<div class="ai-item-actions" data-idx="${i}"></div>` : ''}
+        `;
+      }
       container.appendChild(row);
     });
 
@@ -88,16 +266,17 @@ const QuoteForm = {
       input.addEventListener('input', (e) => {
         const idx = parseInt(e.target.dataset.idx);
         const field = e.target.dataset.field;
-        this.items[idx][field] = field === 'description' ? e.target.value : (parseFloat(e.target.value) || 0);
-        this.calcLineTotal(idx);
+        const tab = this.currentTab();
+        tab.items[idx][field] = field === 'description' ? e.target.value : (parseFloat(e.target.value) || 0);
+        this.calcLineTotal(idx, tab);
         this.recalcTotals();
         // Update line total display without full re-render
         const rows = container.querySelectorAll('.item-row');
         const ltEl = rows[idx]?.querySelector('.line-total');
-        if (ltEl) ltEl.textContent = `€ ${this._fmt(this.items[idx].line_total)}`;
+        if (ltEl) ltEl.textContent = `€ ${this._fmt(tab.items[idx].line_total)}`;
       });
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && input.dataset.field === 'unit_price') {
+        if (e.key === 'Enter' && (input.dataset.field === 'unit_price' || input.dataset.field === 'line_total')) {
           e.preventDefault();
           this.addItem();
         }
@@ -108,20 +287,33 @@ const QuoteForm = {
     });
   },
 
-  calcLineTotal(idx) {
-    const item = this.items[idx];
-    const gross = item.quantity * item.unit_price;
-    item.line_total = gross * (1 - (item.discount || 0) / 100);
+  calcLineTotal(idx, tab = null) {
+    const t = tab || this.currentTab();
+    const mode = t.pricing_mode || 'unit';
+    const item = t.items[idx];
+    if (!item) return;
+    if (mode === 'total') {
+      item.line_total = parseFloat(item.line_total) || 0;
+      return;
+    }
+    const gross = (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
+    item.line_total = gross * (1 - (parseFloat(item.discount) || 0) / 100);
   },
 
   recalcTotals() {
-    this.items.forEach((_, i) => this.calcLineTotal(i));
-    const subtotal = this.items.reduce((s, it) => s + it.line_total, 0);
-    const taxRate = parseFloat(document.getElementById('form-tax-rate').value) || 0;
-    const discount = parseFloat(document.getElementById('form-discount').value) || 0;
+    const tab = this.currentTab();
+    tab.items.forEach((_, i) => this.calcLineTotal(i, tab));
+
+    const subtotal = tab.items.reduce((s, it) => s + (parseFloat(it.line_total) || 0), 0);
+    const taxRate = parseFloat(tab.tax_rate) || 0;
+    const discount = parseFloat(tab.discount) || 0;
     const taxable = subtotal - discount;
     const taxAmount = taxable * (taxRate / 100);
     const total = taxable + taxAmount;
+
+    tab.subtotal = subtotal;
+    tab.tax_amount = taxAmount;
+    tab.total = total;
 
     document.getElementById('total-subtotal').textContent = `€ ${this._fmt(subtotal)}`;
     document.getElementById('total-discount').textContent = discount > 0 ? `− € ${this._fmt(discount)}` : '€ 0,00';
@@ -130,6 +322,26 @@ const QuoteForm = {
   },
 
   getFormData() {
+    // Ensure every tab has up-to-date totals
+    this.tabs.forEach((t) => {
+      t.items = Array.isArray(t.items) ? t.items : [];
+      t.items.forEach((_, i) => this.calcLineTotal(i, t));
+      const sub = t.items.reduce((s, it) => s + (parseFloat(it.line_total) || 0), 0);
+      const disc = parseFloat(t.discount) || 0;
+      const rate = parseFloat(t.tax_rate) || 0;
+      const taxable = sub - disc;
+      t.subtotal = sub;
+      t.tax_amount = taxable * (rate / 100);
+      t.total = taxable + t.tax_amount;
+    });
+
+    const overallSubtotal = this.tabs.reduce((s, t) => s + (parseFloat(t.subtotal) || 0), 0);
+    const overallDiscount = this.tabs.reduce((s, t) => s + (parseFloat(t.discount) || 0), 0);
+    const overallTax = this.tabs.reduce((s, t) => s + (parseFloat(t.tax_amount) || 0), 0);
+    const overallTotal = this.tabs.reduce((s, t) => s + (parseFloat(t.total) || 0), 0);
+
+    const first = this.tabs[0] || this.newTab();
+
     return {
       client_name: document.getElementById('form-client-name').value.trim(),
       client_email: document.getElementById('form-client-email').value.trim(),
@@ -137,26 +349,22 @@ const QuoteForm = {
       client_address: document.getElementById('form-client-address').value.trim(),
       client_vat: document.getElementById('form-client-vat').value.trim(),
       title: document.getElementById('form-title').value.trim(),
-      notes: document.getElementById('form-notes').value.trim(),
-      tax_rate: parseFloat(document.getElementById('form-tax-rate').value) || 22,
-      discount: parseFloat(document.getElementById('form-discount').value) || 0,
-      validity_days: parseInt(document.getElementById('form-validity').value) || 30,
       status: document.getElementById('form-status').value,
-      items: this.items,
-      subtotal: this.items.reduce((s, it) => s + it.line_total, 0),
-      tax_amount: (() => {
-        const sub = this.items.reduce((s, it) => s + it.line_total, 0);
-        const disc = parseFloat(document.getElementById('form-discount').value) || 0;
-        const rate = parseFloat(document.getElementById('form-tax-rate').value) || 0;
-        return (sub - disc) * (rate / 100);
-      })(),
-      total: (() => {
-        const sub = this.items.reduce((s, it) => s + it.line_total, 0);
-        const disc = parseFloat(document.getElementById('form-discount').value) || 0;
-        const rate = parseFloat(document.getElementById('form-tax-rate').value) || 0;
-        const taxable = sub - disc;
-        return taxable + taxable * (rate / 100);
-      })()
+      // New format
+      tabs: this.tabs,
+
+      // Aggregates (used by list/stats)
+      subtotal: overallSubtotal,
+      discount: overallDiscount,
+      tax_amount: overallTax,
+      total: overallTotal,
+
+      // Legacy fields (server can ignore, but keep for compatibility)
+      pricing_mode: first.pricing_mode || 'unit',
+      tax_rate: first.tax_rate ?? 22,
+      validity_days: first.validity_days ?? null,
+      notes: (first.notes || '').trim(),
+      items: first.items || []
     };
   },
 
@@ -185,6 +393,40 @@ const QuoteForm = {
       btn.disabled = false;
       btn.textContent = 'Salva Preventivo';
     }
+  },
+
+  _normalizeTabsFromQuote(quote) {
+    const fromApiTabs = Array.isArray(quote?.tabs) ? quote.tabs : null;
+    const tabs = (fromApiTabs && fromApiTabs.length) ? JSON.parse(JSON.stringify(fromApiTabs)) : null;
+    if (tabs) {
+      // Ensure minimal fields
+      return tabs.map((t, idx) => ({
+        name: t?.name || `Preventivo ${idx + 1}`,
+        pricing_mode: t?.pricing_mode || quote?.pricing_mode || 'unit',
+        items: Array.isArray(t?.items) ? t.items : (Array.isArray(quote?.items) ? quote.items : []),
+        tax_rate: (t?.tax_rate ?? quote?.tax_rate ?? 22),
+        discount: (t?.discount ?? quote?.discount ?? 0),
+        validity_days: (t?.validity_days ?? quote?.validity_days ?? null),
+        notes: (t?.notes ?? quote?.notes ?? ''),
+        subtotal: t?.subtotal,
+        tax_amount: t?.tax_amount,
+        total: t?.total
+      }));
+    }
+
+    const legacyItems = Array.isArray(quote?.items) ? JSON.parse(JSON.stringify(quote.items)) : [];
+    return [{
+      name: 'Preventivo',
+      pricing_mode: quote?.pricing_mode || 'unit',
+      items: legacyItems.length ? legacyItems : [this.newItem('unit')],
+      tax_rate: quote?.tax_rate ?? 22,
+      discount: quote?.discount ?? 0,
+      validity_days: quote?.validity_days ?? null,
+      notes: quote?.notes || '',
+      subtotal: quote?.subtotal,
+      tax_amount: quote?.tax_amount,
+      total: quote?.total
+    }];
   },
 
   _esc(s) { return (s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;'); },

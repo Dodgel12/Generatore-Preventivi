@@ -17,6 +17,27 @@ db.pragma('foreign_keys = ON');
 const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
 db.exec(schema);
 
+// Lightweight migrations for existing DBs (ALTER TABLE when columns are missing)
+function ensureQuoteColumns() {
+  const cols = db.prepare("PRAGMA table_info('quotes')").all();
+  const existing = new Set(cols.map(c => c.name));
+
+  const toAdd = [];
+  if (!existing.has('tabs')) toAdd.push("ALTER TABLE quotes ADD COLUMN tabs TEXT NOT NULL DEFAULT '[]'");
+  if (!existing.has('pricing_mode')) toAdd.push("ALTER TABLE quotes ADD COLUMN pricing_mode TEXT DEFAULT 'unit'");
+
+  for (const stmt of toAdd) {
+    try {
+      db.exec(stmt);
+      console.log('[DB] Migrazione applicata:', stmt);
+    } catch (e) {
+      console.warn('[DB] Migrazione saltata (già applicata o non supportata):', stmt, e.message);
+    }
+  }
+}
+
+ensureQuoteColumns();
+
 // Create default admin user if not exists
 const existingAdmin = db.prepare('SELECT id FROM users WHERE username = ?').get('admin');
 if (!existingAdmin) {

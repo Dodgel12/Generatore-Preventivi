@@ -206,15 +206,9 @@
               </div>
             </div>
             <div class="card-body" style="padding:0">
+              <div id="quote-tabs" class="quote-tabs-bar"></div>
               <div class="items-table-wrap" style="border:none;border-radius:0">
-                <div class="items-table-header">
-                  <span>Descrizione</span>
-                  <span>Qtà</span>
-                  <span>Prezzo Unit.</span>
-                  <span>Sc. %</span>
-                  <span style="text-align:right">Totale</span>
-                  <span></span>
-                </div>
+                <div class="items-table-header" id="items-table-header"></div>
                 <div id="items-rows"></div>
                 <div class="add-item-row">
                   <button type="button" class="btn btn-ghost btn-sm" id="btn-add-item">+ Aggiungi voce</button>
@@ -230,6 +224,17 @@
               <div class="card-header"><span class="card-title">⚙️ Opzioni</span></div>
               <div class="card-body">
                 <div class="form-grid" style="grid-template-columns:1fr 1fr">
+                  <div class="form-group full">
+                    <label class="form-label">Tab (nome)</label>
+                    <input class="form-control" type="text" id="form-tab-name" placeholder="es. Opzione A / Preventivo 1">
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Modalità prezzi</label>
+                    <select class="form-control" id="form-pricing-mode">
+                      <option value="unit">Prezzo unitario</option>
+                      <option value="total">Solo totale (per riga)</option>
+                    </select>
+                  </div>
                   <div class="form-group">
                     <label class="form-label">IVA %</label>
                     <input class="form-control" type="number" id="form-tax-rate" value="22" min="0" max="100">
@@ -240,7 +245,7 @@
                   </div>
                   <div class="form-group">
                     <label class="form-label">Validità (giorni)</label>
-                    <input class="form-control" type="number" id="form-validity" value="30" min="1">
+                    <input class="form-control" type="number" id="form-validity" placeholder="es. 30" min="0">
                   </div>
                   <div class="form-group">
                     <label class="form-label">Stato</label>

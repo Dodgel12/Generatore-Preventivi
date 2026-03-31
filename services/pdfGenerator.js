@@ -13,13 +13,38 @@ Handlebars.registerHelper('formatDate', (dateStr) => {
 });
 Handlebars.registerHelper('add', (a, b) => parseInt(a) + parseInt(b));
 Handlebars.registerHelper('multiply', (a, b) => (parseFloat(a) * parseFloat(b)).toFixed(2));
+Handlebars.registerHelper('eq', (a, b) => a === b);
+
+function ensureTabs(quoteData) {
+  const tabs = Array.isArray(quoteData?.tabs) ? quoteData.tabs : [];
+  if (tabs.length) return quoteData;
+  const items = Array.isArray(quoteData?.items) ? quoteData.items : [];
+  return {
+    ...quoteData,
+    tabs: [
+      {
+        name: 'Preventivo',
+        pricing_mode: quoteData?.pricing_mode || 'unit',
+        items,
+        tax_rate: quoteData?.tax_rate ?? 22,
+        discount: quoteData?.discount ?? 0,
+        validity_days: quoteData?.validity_days ?? null,
+        notes: quoteData?.notes || '',
+        subtotal: quoteData?.subtotal ?? 0,
+        tax_amount: quoteData?.tax_amount ?? 0,
+        total: quoteData?.total ?? 0
+      }
+    ]
+  };
+}
 
 async function generatePDF(quoteData, companyData) {
   const templateSrc = fs.readFileSync(
     path.join(__dirname, '../templates/quote-template.html'), 'utf8'
   );
   const template = Handlebars.compile(templateSrc);
-  const html = template({ ...quoteData, company: companyData });
+  const normalized = ensureTabs(quoteData);
+  const html = template({ ...normalized, company: companyData });
 
   const browser = await puppeteer.launch({
     headless: true,

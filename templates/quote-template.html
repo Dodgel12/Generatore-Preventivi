@@ -34,11 +34,17 @@
   /* Items Table */
   table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
   thead th { background: #6C63FF; color: #fff; padding: 9px 12px; text-align: left; font-size: 8.5pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  thead th:last-child, thead th:nth-last-child(2), thead th:nth-last-child(3) { text-align: right; }
+  thead th.num { text-align: right; }
   tbody tr:nth-child(even) { background: #F8F7FF; }
   tbody td { padding: 8px 12px; font-size: 9pt; border-bottom: 1px solid #EEE; vertical-align: top; }
   tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
   tbody td.desc small { display: block; color: #888; font-size: 8pt; margin-top: 2px; }
+
+  /* Tabs */
+  .tab-section { margin-top: 18px; }
+  .tab-header { display:flex; justify-content: space-between; align-items: center; margin: 4px 0 10px 0; }
+  .tab-name { font-size: 11pt; font-weight: 800; color: #1a1a2e; }
+  .tab-meta { display:flex; gap: 8px; align-items: center; }
 
   /* Totals */
   .totals { display: flex; justify-content: flex-end; margin-bottom: 28px; }
@@ -85,7 +91,9 @@
   <!-- Badges -->
   <div class="badges">
     <span class="badge badge-status">{{status}}</span>
-    <span class="badge badge-validity">Valido {{validity_days}} giorni</span>
+    {{#if validity_days}}
+      <span class="badge badge-validity">Valido {{validity_days}} giorni</span>
+    {{/if}}
   </div>
 
   <!-- Addresses -->
@@ -108,59 +116,88 @@
     {{/if}}
   </div>
 
-  <!-- Items Table -->
-  <table>
-    <thead>
-      <tr>
-        <th style="width:40%">Descrizione</th>
-        <th style="width:10%">Qtà</th>
-        <th style="width:15%">Prezzo Unit.</th>
-        <th style="width:10%">Sconto%</th>
-        <th style="width:15%">Totale</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#each items}}
-      <tr>
-        <td class="desc">
-          {{this.description}}
-          {{#if this.notes}}<small>{{this.notes}}</small>{{/if}}
-        </td>
-        <td class="num">{{this.quantity}}</td>
-        <td class="num">€ {{formatCurrency this.unit_price}}</td>
-        <td class="num">{{#if this.discount}}{{this.discount}}%{{else}}—{{/if}}</td>
-        <td class="num">€ {{formatCurrency this.line_total}}</td>
-      </tr>
-      {{/each}}
-    </tbody>
-  </table>
+  {{#each tabs}}
+    <div class="tab-section">
+      <div class="tab-header">
+        <div class="tab-name">{{this.name}}</div>
+        <div class="tab-meta">
+          {{#if this.validity_days}}
+            <span class="badge badge-validity">Valido {{this.validity_days}} giorni</span>
+          {{/if}}
+        </div>
+      </div>
 
-  <!-- Totals -->
-  <div class="totals">
-    <table class="totals-table">
-      <tr>
-        <td style="color:#666">Imponibile</td>
-        <td>€ {{formatCurrency subtotal}}</td>
-      </tr>
-      {{#if discount}}
-      <tr class="discount-row">
-        <td>Sconto</td>
-        <td>− € {{formatCurrency discount}}</td>
-      </tr>
+      <!-- Items Table -->
+      <table>
+        <thead>
+          <tr>
+            <th style="width:55%">Descrizione</th>
+            {{#if (eq this.pricing_mode 'unit')}}
+              <th class="num" style="width:10%">Qtà</th>
+              <th class="num" style="width:15%">Prezzo Unit.</th>
+              <th class="num" style="width:10%">Sconto%</th>
+              <th class="num" style="width:10%">Totale</th>
+            {{else}}
+              <th class="num" style="width:45%">Totale</th>
+            {{/if}}
+          </tr>
+        </thead>
+        <tbody>
+          {{#each this.items}}
+          <tr>
+            <td class="desc">
+              {{this.description}}
+              {{#if this.notes}}<small>{{this.notes}}</small>{{/if}}
+            </td>
+            {{#if (eq ../pricing_mode 'unit')}}
+              <td class="num">{{this.quantity}}</td>
+              <td class="num">€ {{formatCurrency this.unit_price}}</td>
+              <td class="num">{{#if this.discount}}{{this.discount}}%{{else}}—{{/if}}</td>
+              <td class="num">€ {{formatCurrency this.line_total}}</td>
+            {{else}}
+              <td class="num">€ {{formatCurrency this.line_total}}</td>
+            {{/if}}
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <!-- Totals -->
+      <div class="totals">
+        <table class="totals-table">
+          <tr>
+            <td style="color:#666">Imponibile</td>
+            <td>€ {{formatCurrency this.subtotal}}</td>
+          </tr>
+          {{#if this.discount}}
+          <tr class="discount-row">
+            <td>Sconto</td>
+            <td>− € {{formatCurrency this.discount}}</td>
+          </tr>
+          {{/if}}
+          <tr>
+            <td style="color:#666">IVA {{this.tax_rate}}%</td>
+            <td>€ {{formatCurrency this.tax_amount}}</td>
+          </tr>
+          <tr class="separator"></tr>
+          <tr class="total-row">
+            <td>TOTALE</td>
+            <td>€ {{formatCurrency this.total}}</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Notes (tab) -->
+      {{#if this.notes}}
+      <div class="notes-section">
+        <div class="notes-label">Note</div>
+        <div class="notes-text">{{this.notes}}</div>
+      </div>
       {{/if}}
-      <tr>
-        <td style="color:#666">IVA {{tax_rate}}%</td>
-        <td>€ {{formatCurrency tax_amount}}</td>
-      </tr>
-      <tr class="separator"></tr>
-      <tr class="total-row">
-        <td>TOTALE</td>
-        <td>€ {{formatCurrency total}}</td>
-      </tr>
-    </table>
-  </div>
+    </div>
+  {{/each}}
 
-  <!-- Notes -->
+  <!-- Notes (global, optional) -->
   {{#if notes}}
   <div class="notes-section">
     <div class="notes-label">Note</div>
@@ -171,7 +208,6 @@
   <!-- Footer -->
   <div class="footer">
     <div class="footer-left">
-      Il presente preventivo è valido per {{validity_days}} giorni dalla data di emissione.<br>
       Per accettazione, firmare e restituire copia del documento.
     </div>
     <div class="signature-area">

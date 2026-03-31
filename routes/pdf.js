@@ -24,6 +24,32 @@ router.post('/generate/:id', requireAuth, async (req, res) => {
 
   try {
     quote.items = JSON.parse(quote.items || '[]');
+    quote.tabs = (() => {
+      try {
+        const t = JSON.parse(quote.tabs || '[]');
+        return Array.isArray(t) ? t : [];
+      } catch {
+        return [];
+      }
+    })();
+
+    // Backward compatibility
+    if (!quote.tabs.length) {
+      quote.tabs = [
+        {
+          name: 'Preventivo',
+          pricing_mode: quote.pricing_mode || 'unit',
+          items: quote.items,
+          tax_rate: quote.tax_rate ?? 22,
+          discount: quote.discount ?? 0,
+          validity_days: quote.validity_days ?? null,
+          notes: quote.notes || '',
+          subtotal: quote.subtotal ?? 0,
+          tax_amount: quote.tax_amount ?? 0,
+          total: quote.total ?? 0
+        }
+      ];
+    }
     const pdfPath = await generatePDF(quote, getCompanyData());
 
     // Aggiorna il path nel DB

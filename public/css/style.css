@@ -336,6 +336,38 @@ select.form-control { cursor: pointer; }
 textarea.form-control { resize: vertical; min-height: 80px; }
 
 /* ===== ITEMS TABLE IN FORM ===== */
+.quote-tabs-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--surface2);
+  flex-wrap: wrap;
+}
+.quote-tabs-bar .tab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.quote-tabs-bar .tab-pill.active {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+}
+.quote-tabs-bar .tab-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
 .items-table-wrap {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -361,6 +393,15 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   padding: 8px 12px;
   border-top: 1px solid var(--border-light);
   align-items: center;
+}
+
+/* Total-only pricing mode (description + total + remove) */
+.items-table-wrap.pricing-total .items-table-header,
+.items-table-wrap.pricing-total .item-row {
+  grid-template-columns: minmax(180px,1fr) 140px 40px;
+}
+.items-table-wrap.pricing-total .item-row .line-total {
+  padding-right: 0;
 }
 .item-row input {
   background: transparent;
@@ -589,5 +630,8 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   .form-grid { grid-template-columns: 1fr; }
   .settings-grid { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
-  .items-table-header, .item-row { grid-template-columns: 1fr 60px 90px 70px 90px 36px; }
+  .items-table-wrap:not(.pricing-total) .items-table-header,
+  .items-table-wrap:not(.pricing-total) .item-row { grid-template-columns: 1fr 60px 90px 70px 90px 36px; }
+  .items-table-wrap.pricing-total .items-table-header,
+  .items-table-wrap.pricing-total .item-row { grid-template-columns: 1fr 110px 36px; }
 }
